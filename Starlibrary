@@ -1,0 +1,437 @@
+-- This was made by a 14-year-old. If I can do it, so can you
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local Library = { Toggles = {}, Connections = {}, Sliders = {}, MainGui = nil, MainFrame = nil }
+
+local IsMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local MainSize = IsMobile and UDim2.new(0, 360, 0, 240) or UDim2.new(0, 520, 0, 360)
+local SidebarWidth = IsMobile and 95 or 130
+local TextScale = IsMobile and 11 or 12
+
+
+local function CreateSnow(parent, count, zIndex)
+    local container = Instance.new("Frame", parent)
+    container.Name = "SnowContainer"
+    container.Size = UDim2.new(1, 0, 1, 0)
+    container.BackgroundTransparency = 1
+    container.ZIndex = zIndex or 1 
+    for i = 1, count do
+        task.spawn(function()
+            local flake = Instance.new("Frame", container)
+            flake.Size = UDim2.new(0, 2, 0, 2)
+            flake.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            flake.BackgroundTransparency = 0.6
+            flake.BorderSizePixel = 0
+            flake.ZIndex = zIndex or 1
+            Instance.new("UICorner", flake).CornerRadius = UDim.new(1, 0)
+            flake.Position = UDim2.new(math.random(), 0, math.random(), 0)
+            local speed = math.random(15, 30) / 100
+            local conn; conn = RunService.RenderStepped:Connect(function(dt)
+                if not flake or not flake.Parent then conn:Disconnect() return end
+                flake.Position = flake.Position + UDim2.new(math.sin(tick() + i)*0.0004, 0, speed * dt, 0)
+                if flake.Position.Y.Scale > 1 then flake.Position = UDim2.new(math.random(), 0, -0.05, 0) end
+            end)
+        end)
+    end
+end
+
+function Library:Destroy()
+    if self.MainGui then self.MainGui:Destroy() end
+end
+
+function Library:CreateWindow(title, restoreText)
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "StarLibrary"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.IgnoreGuiInset = true
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    ScreenGui.DisplayOrder = 2147483647 
+    
+    local success, err = pcall(function()
+        ScreenGui.Parent = game:GetService("CoreGui")
+    end)
+    if not success then
+        ScreenGui.Parent = PlayerGui
+    end
+    
+    self.MainGui = ScreenGui
+
+    local function makeDraggable(topBar, frame)
+        local dragging, dragStart, startPos
+        topBar.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true; dragStart = input.Position; startPos = frame.Position
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local delta = input.Position - dragStart
+                frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
+        end)
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+        end)
+    end
+
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = MainSize
+    MainFrame.Position = UDim2.new(0.5, -MainSize.X.Offset/2, 0.5, -MainSize.Y.Offset/2)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+    MainFrame.Visible = true
+    MainFrame.ClipsDescendants = true
+    MainFrame.Parent = ScreenGui
+    self.MainFrame = MainFrame
+    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+    local MainStroke = Instance.new("UIStroke", MainFrame); MainStroke.Color = Color3.fromRGB(50, 50, 60); MainStroke.Transparency = 0.4
+
+    CreateSnow(MainFrame, IsMobile and 20 or 40, 5)
+
+    local TitleBar = Instance.new("Frame", MainFrame)
+    TitleBar.ZIndex = 3
+    TitleBar.Size = UDim2.new(1, 0, 0, 34); TitleBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255); TitleBar.BackgroundTransparency = 0.97
+    
+    local TitleText = Instance.new("TextLabel", TitleBar)
+    TitleText.ZIndex = 4
+    TitleText.Text = "  " .. (title or "StarLibrary"); TitleText.Size = UDim2.new(1, -70, 1, 0); TitleText.TextColor3 = Color3.fromRGB(255, 255, 255); TitleText.BackgroundTransparency = 1; TitleText.Font = "GothamBold"; TitleText.TextSize = TextScale; TitleText.TextXAlignment = "Left"
+
+    local Controls = Instance.new("Frame", TitleBar)
+    Controls.ZIndex = 4
+    Controls.Size = UDim2.new(0, 70, 1, 0); Controls.Position = UDim2.new(1, -70, 0, 0); Controls.BackgroundTransparency = 1
+
+    local Min = Instance.new("TextButton", Controls)
+    Min.ZIndex = 5
+    Min.Text = "━"; Min.Size = UDim2.new(0, 35, 1, 0); Min.BackgroundTransparency = 1; Min.TextColor3 = Color3.fromRGB(200, 200, 200); Min.TextSize = 14; Min.Font = "GothamBold"
+    
+    local Close = Instance.new("TextButton", Controls)
+    Close.ZIndex = 5
+    Close.Text = "X"; Close.Position = UDim2.new(0, 35, 0, 0); Close.Size = UDim2.new(0, 35, 1, 0); Close.BackgroundTransparency = 1; Close.TextColor3 = Color3.fromRGB(200, 200, 200); Close.TextSize = 14; Close.Font = "GothamBold"
+
+    local ConfirmMenu = Instance.new("Frame", ScreenGui)
+    ConfirmMenu.ZIndex = 10
+    ConfirmMenu.Size = UDim2.new(0, 240, 0, 120); ConfirmMenu.Position = UDim2.new(0.5, -120, -0.2, 0); ConfirmMenu.BackgroundColor3 = Color3.fromRGB(12, 12, 16); ConfirmMenu.BorderSizePixel = 0; Instance.new("UICorner", ConfirmMenu)
+    Instance.new("UIStroke", ConfirmMenu).Color = Color3.fromRGB(50, 50, 60); ConfirmMenu.UIStroke.Transparency = 0.4
+    
+    
+    CreateSnow(ConfirmMenu, 15, 12)
+
+    local ConfirmText = Instance.new("TextLabel", ConfirmMenu)
+    ConfirmText.ZIndex = 11
+    ConfirmText.Text = "Unload Library?"; ConfirmText.Size = UDim2.new(1, 0, 0.5, 0); ConfirmText.TextColor3 = Color3.fromRGB(255, 255, 255); ConfirmText.BackgroundTransparency = 1; ConfirmText.Font = "GothamBold"; ConfirmText.TextSize = 11
+
+    local YesBtn = Instance.new("TextButton", ConfirmMenu)
+    YesBtn.ZIndex = 11
+    YesBtn.Text = "YES"; YesBtn.Size = UDim2.new(0, 80, 0, 30); YesBtn.Position = UDim2.new(0.15, 0, 0.6, 0); YesBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255); YesBtn.TextColor3 = Color3.fromRGB(0, 0, 0); YesBtn.Font = "GothamBold"; YesBtn.TextSize = 10; Instance.new("UICorner", YesBtn)
+
+    local NoBtn = Instance.new("TextButton", ConfirmMenu)
+    NoBtn.ZIndex = 11
+    NoBtn.Text = "NO"; NoBtn.Size = UDim2.new(0, 80, 0, 30); NoBtn.Position = UDim2.new(0.55, 0, 0.6, 0); NoBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 35); NoBtn.TextColor3 = Color3.fromRGB(255, 255, 255); NoBtn.Font = "GothamBold"; NoBtn.TextSize = 10; Instance.new("UICorner", NoBtn)
+
+    Close.MouseButton1Click:Connect(function() ConfirmMenu:TweenPosition(UDim2.new(0.5, -120, 0.02, 0), "Out", "Back", 0.3, true) end)
+    NoBtn.MouseButton1Click:Connect(function() ConfirmMenu:TweenPosition(UDim2.new(0.5, -120, -0.2, 0), "In", "Quad", 0.3, true) end)
+    YesBtn.MouseButton1Click:Connect(function() 
+        for _, toggle in pairs(Library.Toggles) do if toggle.State then toggle.Func(false) end end
+        for _, slider in pairs(Library.Sliders) do slider.Func(slider.Default) end
+        ScreenGui:Destroy() 
+    end)
+
+    local ReopenPill = Instance.new("TextButton", ScreenGui)
+    ReopenPill.ZIndex = 100
+    ReopenPill.Size = UDim2.new(0, 110, 0, 34); ReopenPill.Position = UDim2.new(0.5, -55, 0.05, 0); ReopenPill.BackgroundColor3 = Color3.fromRGB(15, 15, 20); ReopenPill.TextColor3 = Color3.fromRGB(255, 255, 255); ReopenPill.Text = restoreText or "RESTORE"; ReopenPill.Visible = false; ReopenPill.Font = "GothamBold"; ReopenPill.TextSize = 10; Instance.new("UICorner", ReopenPill)
+    Instance.new("UIStroke", ReopenPill).Color = Color3.fromRGB(255,255,255); ReopenPill.UIStroke.Transparency = 0.8
+    CreateSnow(ReopenPill, 10, 101)
+
+    Min.MouseButton1Click:Connect(function() MainFrame.Visible = false; ReopenPill.Visible = true end)
+    ReopenPill.MouseButton1Click:Connect(function() MainFrame.Visible = true; ReopenPill.Visible = false end)
+
+    local Sidebar = Instance.new("ScrollingFrame", MainFrame)
+    Sidebar.ZIndex = 2 
+    Sidebar.Size = UDim2.new(0, SidebarWidth, 1, -34); Sidebar.Position = UDim2.new(0, 0, 0, 34); Sidebar.BackgroundTransparency = 1; Sidebar.ScrollBarThickness = 0
+    local SideLayout = Instance.new("UIListLayout", Sidebar); SideLayout.Padding = UDim.new(0, 5); SideLayout.HorizontalAlignment = "Center"
+    Instance.new("UIPadding", Sidebar).PaddingTop = UDim.new(0, 10)
+
+    SideLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Sidebar.CanvasSize = UDim2.new(0, 0, 0, SideLayout.AbsoluteContentSize.Y + 20)
+    end)
+
+    local Container = Instance.new("ScrollingFrame", MainFrame)
+    Container.ZIndex = 2 
+    Container.Name = "Container"
+    Container.Size = UDim2.new(1, -(SidebarWidth + 10), 1, -50)
+    Container.Position = UDim2.new(0, SidebarWidth + 5, 0, 45)
+    Container.BackgroundTransparency = 1
+    Container.ClipsDescendants = true
+    Container.ScrollBarThickness = 0
+    Container.ScrollingDirection = Enum.ScrollingDirection.Y
+    Container.CanvasSize = UDim2.new(0, 0, 0, 0)
+    
+    local ContainerLayout = Instance.new("UIListLayout", Container)
+    ContainerLayout.Padding = UDim.new(0, 10)
+    ContainerLayout.HorizontalAlignment = "Center" 
+    
+    ContainerLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Container.CanvasSize = UDim2.new(0, 0, 0, ContainerLayout.AbsoluteContentSize.Y + 20)
+    end)
+
+    makeDraggable(TitleBar, MainFrame)
+    makeDraggable(ReopenPill, ReopenPill)
+
+    local TabApi = {}
+    function TabApi:CreateTab(name)
+        local TabBtn = Instance.new("TextButton", Sidebar)
+        TabBtn.ZIndex = 3
+        TabBtn.Size = UDim2.new(0.9, 0, 0, 32); TabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 24); TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150); TabBtn.Text = name; TabBtn.Font = "GothamBold"; TabBtn.TextSize = TextScale - 1; Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
+
+        local TabPage = Instance.new("Frame", Container)
+        TabPage.ZIndex = 3
+        TabPage.Name = name .. "_Page"
+        TabPage.Size = UDim2.new(1, 0, 0, 0); TabPage.BackgroundTransparency = 1; TabPage.Visible = false
+        local PageLayout = Instance.new("UIListLayout", TabPage); PageLayout.Padding = UDim.new(0, 10)
+        PageLayout.HorizontalAlignment = "Center"
+        
+        Instance.new("UIPadding", TabPage).PaddingLeft = UDim.new(0, 4); TabPage.UIPadding.PaddingRight = UDim.new(0, 4)
+        
+        PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            if TabPage.Visible then
+                TabPage.Size = UDim2.new(1, 0, 0, PageLayout.AbsoluteContentSize.Y)
+            end
+        end)
+
+        TabBtn.MouseButton1Click:Connect(function()
+            for _, v in pairs(Container:GetChildren()) do if v:IsA("Frame") then v.Visible = false; v.Size = UDim2.new(1, 0, 0, 0) end end
+            for _, v in pairs(Sidebar:GetChildren()) do if v:IsA("TextButton") then v.BackgroundColor3 = Color3.fromRGB(20,20,24); v.TextColor3 = Color3.fromRGB(150,150,150) end end
+            TabPage.Visible = true; TabPage.Size = UDim2.new(1, 0, 0, PageLayout.AbsoluteContentSize.Y)
+            TabBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50); TabBtn.TextColor3 = Color3.fromRGB(255,255,255)
+            Container.CanvasPosition = Vector2.new(0, 0)
+        end)
+        
+        if #Sidebar:GetChildren() == 2 then 
+            TabPage.Visible = true; TabPage.Size = UDim2.new(1, 0, 0, PageLayout.AbsoluteContentSize.Y)
+            TabBtn.BackgroundColor3 = Color3.fromRGB(40,40,50); TabBtn.TextColor3 = Color3.fromRGB(255,255,255) 
+        end
+
+        local ElementApi = {}
+
+        function ElementApi:AddDropdown(text, list, callback)
+            local open = false
+            local D = Instance.new("Frame", TabPage)
+            D.ZIndex = 4
+            D.Size = UDim2.new(1, -6, 0, 34) 
+            D.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+            D.ClipsDescendants = true
+            Instance.new("UICorner", D).CornerRadius = UDim.new(0, 6)
+            
+            local Stroke = Instance.new("UIStroke", D)
+            Stroke.Color = Color3.fromRGB(60, 60, 70)
+            Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+            local B = Instance.new("TextButton", D)
+            B.ZIndex = 5
+            B.Size = UDim2.new(1, 0, 0, 34)
+            B.BackgroundTransparency = 1
+            B.TextColor3 = Color3.fromRGB(255,255,255)
+            B.Text = "  " .. text .. " : Select"
+            B.Font = "GothamBold"
+            B.TextSize = TextScale - 1
+            B.TextXAlignment = "Left"
+
+            local Arrow = Instance.new("TextLabel", B)
+            Arrow.ZIndex = 5
+            Arrow.Text = "›"
+            Arrow.Size = UDim2.new(0, 34, 1, 0)
+            Arrow.Position = UDim2.new(1, -34, 0, 0)
+            Arrow.BackgroundTransparency = 1
+            Arrow.TextColor3 = Color3.fromRGB(150,150,150)
+            Arrow.TextSize = 16
+
+            local ListHolder = Instance.new("ScrollingFrame", D)
+            ListHolder.ZIndex = 5
+            ListHolder.Position = UDim2.new(0, 0, 0, 34)
+            ListHolder.Size = UDim2.new(1, 0, 1, -34)
+            ListHolder.BackgroundTransparency = 1
+            ListHolder.BorderSizePixel = 0
+            ListHolder.ScrollBarThickness = 0
+            ListHolder.ScrollingDirection = Enum.ScrollingDirection.Y
+            ListHolder.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+            local ListLayout = Instance.new("UIListLayout", ListHolder)
+            ListLayout.Padding = UDim.new(0, 2)
+            Instance.new("UIPadding", ListHolder).PaddingTop = UDim.new(0, 5)
+
+            ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                ListHolder.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y + 10)
+            end)
+
+            B.MouseButton1Click:Connect(function()
+                open = not open
+                local maxHeight = math.clamp((#list * 28) + 44, 34, 184)
+                local targetSize = open and UDim2.new(1, -6, 0, maxHeight) or UDim2.new(1, -6, 0, 34)
+                
+                TweenService:Create(D, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Size = targetSize}):Play()
+                TweenService:Create(Arrow, TweenInfo.new(0.3), {Rotation = open and 90 or 0}):Play()
+                
+                task.spawn(function()
+                    local t = 0
+                    while t < 0.4 do
+                        t = t + RunService.Heartbeat:Wait()
+                        TabPage.Size = UDim2.new(1, 0, 0, PageLayout.AbsoluteContentSize.Y)
+                    end
+                end)
+            end)
+
+            for _, val in pairs(list) do
+                local Opt = Instance.new("TextButton", ListHolder)
+                Opt.ZIndex = 6
+                Opt.Size = UDim2.new(1, -10, 0, 26)
+                Opt.BackgroundTransparency = 1
+                Opt.TextColor3 = Color3.fromRGB(180, 180, 185)
+                Opt.Text = " " .. val
+                Opt.Font = "GothamBold"
+                Opt.TextSize = TextScale - 2
+                Opt.TextXAlignment = "Left"
+                
+                Opt.MouseButton1Click:Connect(function()
+                    B.Text = "  " .. text .. " : " .. val
+                    open = false
+                    TweenService:Create(D, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Size = UDim2.new(1, -6, 0, 34)}):Play()
+                    TweenService:Create(Arrow, TweenInfo.new(0.3), {Rotation = 0}):Play()
+                    callback(val)
+                end)
+            end
+        end
+
+        function ElementApi:AddToggle(text, callback)
+            local toggleId = #Library.Toggles + 1
+            Library.Toggles[toggleId] = { Func = callback, State = false }
+            local T = Instance.new("Frame", TabPage); T.Size = UDim2.new(1, -10, 0, 30); T.BackgroundTransparency = 1; T.ZIndex = 4
+            local L = Instance.new("TextLabel", T); L.ZIndex = 5; L.Text = text; L.Size = UDim2.new(1,0,1,0); L.TextColor3 = Color3.fromRGB(200,200,200); L.BackgroundTransparency = 1; L.TextXAlignment = "Left"; L.Font = "GothamBold"; L.TextSize = TextScale - 1
+            local B = Instance.new("TextButton", T); B.ZIndex = 5; B.Size = UDim2.new(0, 36, 0, 18); B.Position = UDim2.new(1,-36,0.5,-9); B.BackgroundColor3 = Color3.fromRGB(40,40,50); B.Text = ""; Instance.new("UICorner", B).CornerRadius = UDim.new(1,0)
+            local Circle = Instance.new("Frame", B); Circle.ZIndex = 6; Circle.Size = UDim2.new(0,14,0,14); Circle.Position = UDim2.new(0,2,0.5,-7); Circle.BackgroundColor3 = Color3.fromRGB(150,150,150); Instance.new("UICorner", Circle).CornerRadius = UDim.new(1,0)
+            B.MouseButton1Click:Connect(function()
+                Library.Toggles[toggleId].State = not Library.Toggles[toggleId].State
+                local state = Library.Toggles[toggleId].State
+                TweenService:Create(B, TweenInfo.new(0.25), {BackgroundColor3 = state and Color3.fromRGB(255,255,255) or Color3.fromRGB(40,40,50)}):Play()
+                TweenService:Create(Circle, TweenInfo.new(0.25), {Position = state and UDim2.new(1,-16,0.5,-7) or UDim2.new(0,2,0.5,-7), BackgroundColor3 = state and Color3.fromRGB(0,0,0) or Color3.fromRGB(150,150,150)}):Play()
+                callback(state)
+            end)
+        end
+
+        function ElementApi:AddSlider(text, min, max, default, callback)
+            local sliderId = #Library.Sliders + 1
+            Library.Sliders[sliderId] = { Func = callback, Default = default }
+            local S = Instance.new("Frame", TabPage); S.ZIndex = 4; S.Size = UDim2.new(1, -10, 0, 42); S.BackgroundTransparency = 1
+            local L = Instance.new("TextLabel", S); L.ZIndex = 5; L.Text = text .. ": " .. default; L.Size = UDim2.new(1,0,0,16); L.TextColor3 = Color3.fromRGB(255,255,255); L.BackgroundTransparency = 1; L.TextXAlignment = "Left"; L.Font = "GothamBold"; L.TextSize = TextScale - 1
+            
+            local BarContainer = Instance.new("Frame", S); BarContainer.ZIndex = 5; BarContainer.Size = UDim2.new(1, 0, 0, 20); BarContainer.Position = UDim2.new(0, 0, 0, 20); BarContainer.BackgroundTransparency = 1
+            local Bar = Instance.new("Frame", BarContainer); Bar.ZIndex = 6; Bar.Size = UDim2.new(1, -12, 0, 4); Bar.Position = UDim2.new(0, 6, 0.5, -2); Bar.BackgroundColor3 = Color3.fromRGB(40,40,50); Instance.new("UICorner", Bar)
+            
+            local Fill = Instance.new("Frame", Bar); Fill.ZIndex = 7; Fill.Size = UDim2.new(0,0,1,0); Fill.BackgroundColor3 = Color3.fromRGB(255,255,255); Instance.new("UICorner", Fill)
+            local Ball = Instance.new("Frame", Bar); Ball.Size = UDim2.new(0, 12, 0, 12); Ball.AnchorPoint = Vector2.new(0.5, 0.5); Ball.Position = UDim2.new(0,0,0.5,0); Ball.BackgroundColor3 = Color3.fromRGB(255,255,255); Ball.ZIndex = 10; Instance.new("UICorner", Ball).CornerRadius = UDim.new(1,0)
+            local isDragging = false
+            
+            local function update(input)
+                local p = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
+                Fill.Size = UDim2.new(p, 0, 1, 0); Ball.Position = UDim2.new(p, 0, 0.5, 0)
+                local val = math.floor(min + (max - min) * p); L.Text = text .. ": " .. val; callback(val)
+            end
+            
+            BarContainer.InputBegan:Connect(function(input) if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then isDragging = true; update(input) end end)
+            UserInputService.InputChanged:Connect(function(input) if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then update(input) end end)
+            UserInputService.InputEnded:Connect(function(input) if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then isDragging = false end end)
+            local startP = math.clamp((default - min) / (max - min), 0, 1); Fill.Size = UDim2.new(startP, 0, 1, 0); Ball.Position = UDim2.new(startP, 0, 0.5, 0)
+        end
+
+        function ElementApi:AddButton(text, callback)
+            local B = Instance.new("TextButton", TabPage); B.ZIndex = 4; B.Size = UDim2.new(1, -10, 0, 32); B.BackgroundColor3 = Color3.fromRGB(30, 30, 38); B.TextColor3 = Color3.fromRGB(255, 255, 255); B.Text = text; B.Font = "GothamBold"; B.TextSize = TextScale - 1; Instance.new("UICorner", B).CornerRadius = UDim.new(0, 6)
+            B.MouseButton1Click:Connect(callback)
+        end
+        
+        function ElementApi:AddLabel(text)
+            local S = Instance.new("Frame", TabPage); S.ZIndex = 4; S.Size = UDim2.new(1, -10, 0, 25); S.BackgroundTransparency = 1
+            local L = Instance.new("TextLabel", S); L.ZIndex = 5; L.Text = text:upper(); L.Size = UDim2.new(1, 0, 1, 0); L.TextColor3 = Color3.fromRGB(255, 255, 255); L.BackgroundTransparency = 1; L.Font = "GothamBold"; L.TextSize = TextScale - 2; L.TextXAlignment = "Left"
+            local Line = Instance.new("Frame", S); Line.ZIndex = 5; Line.Size = UDim2.new(1, 0, 0, 1); Line.Position = UDim2.new(0, 0, 1, 0); Line.BackgroundColor3 = Color3.fromRGB(255, 255, 255); Line.BackgroundTransparency = 0.9
+        end
+
+        return ElementApi
+    end
+    return TabApi
+end
+
+return Library
+
+
+--[[
+--How to use
+
+local StarLib = loadstring(game:HttpGet(""))()
+
+-- 1. Create the Main Window
+local Window = StarLib:CreateWindow("StarLibrary", "REOPEN UI")
+
+-- 2. Global Library Commands (Can be called from anywhere)
+-- StarLib:SetVisibility(false) -- Hides the UI
+-- StarLib:Destroy()           -- Deletes the UI
+-- print(StarLib:IsVisible())  -- Returns true/false
+
+-- 3. Create a Tab
+local MainTab = Window:CreateTab("Main Features")
+local SettingsTab = Window:CreateTab("Settings")
+
+-- 4. Notification Command
+StarLib:Notify({
+    Title = "Welcome!",
+    Content = "StarLibrary V6.0 has loaded successfully.",
+    Duration = 5,
+    Image = 4483362458 -- Default icon or your own asset ID
+})
+
+-- 5. Add a Label (Organize your sections)
+MainTab:AddLabel("label test")
+
+-- 6. Add a Button
+MainTab:AddButton("button test", function()
+    print("Hello from StarLibrary!")
+    
+    StarLib:Notify({
+        Title = "Button Pressed",
+        Content = "You clicked the button.",
+        Duration = 3
+    })
+end)
+
+-- 7. Add a Toggle
+MainTab:AddToggle("toggle test", function(state)
+    print("toggle is now: " .. tostring(state))
+end)
+
+-- 8. Add a Slider (Ball is prioritized with ZIndex 10)
+MainTab:AddSlider("slidertest", 16, 200, 16, function(value)
+    print(value)
+end)
+
+-- 9. Add a Dropdown (Fixed Syntax)
+MainTab:AddDropdown("dropdowntest", {"dropdowntest1", "dropdowntest2", "dropdowntest3", "dropdowntest4","dropdowntest5", "dropdowntest6", "dropdowntest7", "dropdowntest8", "dropdowntest9", "dropdowntest10"}, function(selected)
+    print("User selected:" .. selected)
+end)
+
+-- 10. Example of UI Control via Button
+SettingsTab:AddButton("Hide UI for 3 Seconds", function()
+    StarLib:SetVisibility(false)
+    task.wait(3)
+    StarLib:SetVisibility(true)
+end)
+
+SettingsTab:AddButton("Self Destruct UI", function()
+    StarLib:Destroy()
+end)
+
+return StarLib
+
+
+]]
