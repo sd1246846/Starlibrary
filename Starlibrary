@@ -14,7 +14,6 @@ local MainSize = IsMobile and UDim2.new(0, 360, 0, 240) or UDim2.new(0, 520, 0, 
 local SidebarWidth = IsMobile and 95 or 130
 local TextScale = IsMobile and 11 or 12
 
-
 local function CreateSnow(parent, count, zIndex)
     local container = Instance.new("Frame", parent)
     container.Name = "SnowContainer"
@@ -39,6 +38,87 @@ local function CreateSnow(parent, count, zIndex)
             end)
         end)
     end
+end
+
+function Library:SetVisibility(bool)
+    if self.MainFrame then
+        self.MainFrame.Visible = bool
+    end
+end
+
+function Library:IsVisible()
+    return self.MainFrame and self.MainFrame.Visible or false
+end
+
+function Library:Notify(data)
+    if not self.MainGui then return end
+    
+    local NotifHolder = self.MainGui:FindFirstChild("NotifHolder")
+    if not NotifHolder then
+        NotifHolder = Instance.new("Frame", self.MainGui)
+        NotifHolder.Name = "NotifHolder"
+        NotifHolder.Size = UDim2.new(0, 260, 1, 0)
+        NotifHolder.Position = UDim2.new(1, -270, 0, 0)
+        NotifHolder.BackgroundTransparency = 1
+        local Layout = Instance.new("UIListLayout", NotifHolder)
+        Layout.VerticalAlignment = "Bottom"
+        Layout.Padding = UDim.new(0, 8)
+        Instance.new("UIPadding", NotifHolder).PaddingBottom = UDim.new(0, 20)
+    end
+
+    local Notif = Instance.new("Frame", NotifHolder)
+    Notif.Size = UDim2.new(1, 0, 0, 0)
+    Notif.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+    Notif.ClipsDescendants = true
+    Notif.ZIndex = 200
+    Instance.new("UICorner", Notif).CornerRadius = UDim.new(0, 8)
+    
+    local Stroke = Instance.new("UIStroke", Notif)
+    Stroke.Color = Color3.fromRGB(50, 50, 60)
+    Stroke.Transparency = 0.4
+
+    -- Notification Snow
+    CreateSnow(Notif, 10, 201)
+
+    local Icon = Instance.new("ImageLabel", Notif)
+    Icon.ZIndex = 202
+    Icon.Size = UDim2.new(0, 20, 0, 20)
+    Icon.Position = UDim2.new(0, 12, 0, 10)
+    Icon.BackgroundTransparency = 1
+    Icon.Image = "rbxassetid://" .. (data.Image or 4483362458)
+    Icon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+
+    local Title = Instance.new("TextLabel", Notif)
+    Title.ZIndex = 202
+    Title.Text = data.Title or "Notification"
+    Title.Size = UDim2.new(1, -50, 0, 20)
+    Title.Position = UDim2.new(0, 40, 0, 10)
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.Font = "GothamBold"
+    Title.TextSize = TextScale
+    Title.BackgroundTransparency = 1
+    Title.TextXAlignment = "Left"
+
+    local Content = Instance.new("TextLabel", Notif)
+    Content.ZIndex = 202
+    Content.Text = data.Content or ""
+    Content.Size = UDim2.new(1, -24, 0, 30)
+    Content.Position = UDim2.new(0, 12, 0, 45)
+    Content.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Content.Font = "Gotham"
+    Content.TextSize = TextScale - 2
+    Content.BackgroundTransparency = 1
+    Content.TextXAlignment = "Left"
+    Content.TextYAlignment = "Top"
+    Content.TextWrapped = true
+
+    TweenService:Create(Notif, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 0, 70)}):Play()
+    
+    task.delay(data.Duration or 5, function()
+        TweenService:Create(Notif, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(1, 0, 0, 0)}):Play()
+        task.wait(0.5)
+        Notif:Destroy()
+    end)
 end
 
 function Library:Destroy()
@@ -117,7 +197,6 @@ function Library:CreateWindow(title, restoreText)
     ConfirmMenu.ZIndex = 10
     ConfirmMenu.Size = UDim2.new(0, 240, 0, 120); ConfirmMenu.Position = UDim2.new(0.5, -120, -0.2, 0); ConfirmMenu.BackgroundColor3 = Color3.fromRGB(12, 12, 16); ConfirmMenu.BorderSizePixel = 0; Instance.new("UICorner", ConfirmMenu)
     Instance.new("UIStroke", ConfirmMenu).Color = Color3.fromRGB(50, 50, 60); ConfirmMenu.UIStroke.Transparency = 0.4
-    
     
     CreateSnow(ConfirmMenu, 15, 12)
 
@@ -364,7 +443,6 @@ function Library:CreateWindow(title, restoreText)
 end
 
 return Library
-
 
 --[[
 --How to use
