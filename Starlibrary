@@ -14,30 +14,58 @@ local MainSize = IsMobile and UDim2.new(0, 360, 0, 240) or UDim2.new(0, 520, 0, 
 local SidebarWidth = IsMobile and 95 or 130
 local TextScale = IsMobile and 11 or 12
 
+-- OPTIMIZED SNOW SYSTEM (Single Loop)
 local function CreateSnow(parent, count, zIndex)
-    local container = Instance.new("Frame", parent)
+    local container = Instance.new("Frame")
     container.Name = "SnowContainer"
     container.Size = UDim2.new(1, 0, 1, 0)
     container.BackgroundTransparency = 1
     container.ZIndex = zIndex or 1 
+    container.Parent = parent
+
+    local flakes = {}
+    
     for i = 1, count do
-        task.spawn(function()
-            local flake = Instance.new("Frame", container)
-            flake.Size = UDim2.new(0, 2, 0, 2)
-            flake.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            flake.BackgroundTransparency = 0.6
-            flake.BorderSizePixel = 0
-            flake.ZIndex = zIndex or 1
-            Instance.new("UICorner", flake).CornerRadius = UDim.new(1, 0)
-            flake.Position = UDim2.new(math.random(), 0, math.random(), 0)
-            local speed = math.random(15, 30) / 100
-            local conn; conn = RunService.RenderStepped:Connect(function(dt)
-                if not flake or not flake.Parent then conn:Disconnect() return end
-                flake.Position = flake.Position + UDim2.new(math.sin(tick() + i)*0.0004, 0, speed * dt, 0)
-                if flake.Position.Y.Scale > 1 then flake.Position = UDim2.new(math.random(), 0, -0.05, 0) end
-            end)
-        end)
+        local flake = Instance.new("Frame")
+        flake.Size = UDim2.new(0, 2, 0, 2)
+        flake.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        flake.BackgroundTransparency = 0.6
+        flake.BorderSizePixel = 0
+        flake.ZIndex = zIndex or 1
+        Instance.new("UICorner", flake).CornerRadius = UDim.new(1, 0)
+        flake.Position = UDim2.new(math.random(), 0, math.random(), 0)
+        flake.Parent = container
+        
+        table.insert(flakes, {
+            Obj = flake,
+            Speed = math.random(15, 30) / 100,
+            Offset = i
+        })
     end
+
+    local conn
+    conn = RunService.RenderStepped:Connect(function(dt)
+        if not container or not container.Parent then 
+            conn:Disconnect() 
+            return 
+        end
+        
+        local t = tick()
+        for _, data in ipairs(flakes) do
+            local flake = data.Obj
+            local currentPos = flake.Position
+            
+            local newX = currentPos.X.Scale + math.sin(t + data.Offset) * 0.0004
+            local newY = currentPos.Y.Scale + (data.Speed * dt)
+            
+            if newY > 1 then 
+                newY = -0.05 
+                newX = math.random()
+            end
+            
+            flake.Position = UDim2.new(newX, 0, newY, 0)
+        end
+    end)
 end
 
 function Library:SetVisibility(bool)
@@ -435,6 +463,29 @@ function Library:CreateWindow(title, restoreText)
             local S = Instance.new("Frame", TabPage); S.ZIndex = 4; S.Size = UDim2.new(1, -10, 0, 25); S.BackgroundTransparency = 1
             local L = Instance.new("TextLabel", S); L.ZIndex = 5; L.Text = text:upper(); L.Size = UDim2.new(1, 0, 1, 0); L.TextColor3 = Color3.fromRGB(255, 255, 255); L.BackgroundTransparency = 1; L.Font = "GothamBold"; L.TextSize = TextScale - 2; L.TextXAlignment = "Left"
             local Line = Instance.new("Frame", S); Line.ZIndex = 5; Line.Size = UDim2.new(1, 0, 0, 1); Line.Position = UDim2.new(0, 0, 1, 0); Line.BackgroundColor3 = Color3.fromRGB(255, 255, 255); Line.BackgroundTransparency = 0.9
+        end
+
+        function ElementApi:AddKeybind(text, default, callback)
+            local Key = default
+            local Bound = false
+            local K = Instance.new("Frame", TabPage); K.Size = UDim2.new(1, -10, 0, 30); K.BackgroundTransparency = 1; K.ZIndex = 4
+            local L = Instance.new("TextLabel", K); L.ZIndex = 5; L.Text = text; L.Size = UDim2.new(1,0,1,0); L.TextColor3 = Color3.fromRGB(200,200,200); L.BackgroundTransparency = 1; L.TextXAlignment = "Left"; L.Font = "GothamBold"; L.TextSize = TextScale - 1
+            local B = Instance.new("TextButton", K); B.ZIndex = 5; B.Size = UDim2.new(0, 60, 0, 22); B.Position = UDim2.new(1,-60,0.5,-11); B.BackgroundColor3 = Color3.fromRGB(40,40,50); B.Text = Key.Name; B.TextColor3 = Color3.fromRGB(255,255,255); B.Font = "GothamBold"; B.TextSize = TextScale - 2; Instance.new("UICorner", B).CornerRadius = UDim.new(0,4)
+            
+            B.MouseButton1Click:Connect(function()
+                Bound = true
+                B.Text = "..."
+            end)
+            
+            UserInputService.InputBegan:Connect(function(input)
+                if Bound and input.UserInputType == Enum.UserInputType.Keyboard then
+                    Key = input.KeyCode
+                    Bound = false
+                    B.Text = Key.Name
+                elseif not Bound and input.KeyCode == Key then
+                    callback()
+                end
+            end)
         end
 
         return ElementApi
