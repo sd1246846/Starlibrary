@@ -494,3 +494,85 @@ function Library:CreateWindow(title, restoreText)
 end
 
 return Library
+
+
+
+
+--[[
+
+local StarLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/sd1246846/Starlibrary/refs/heads/main/Starlibrary"))()
+
+-- 1. Create the Main Window
+local Window = StarLib:CreateWindow("StarLibrary", "REOPEN UI")
+
+-- 2. Global Library Commands (Can be called from anywhere)
+-- StarLib:SetVisibility(false) -- Hides the UI
+-- StarLib:Destroy()           -- Deletes the UI
+-- print(StarLib:IsVisible())  -- Returns true/false
+
+-- 3. Create a Tab
+local MainTab = Window:CreateTab("Main Features")
+local SettingsTab = Window:CreateTab("Settings")
+
+-- 4. Notification Command
+StarLib:Notify({
+    Title = "Welcome!",
+    Content = "StarLibrary V6.0 has loaded successfully.",
+    Duration = 5,
+    Image = 4483362458 -- Default icon or your own asset ID
+})
+
+-- 5. Add a Label (Organize your sections)
+MainTab:AddLabel("label test")
+
+-- 6. Add a Button
+MainTab:AddButton("button test", function()
+    print("Hello from StarLibrary!")
+    
+    StarLib:Notify({
+        Title = "Button Pressed",
+        Content = "You clicked the button.",
+        Duration = 3
+    })
+end)
+
+-- 7. Add a Toggle
+MainTab:AddToggle("toggle test", function(state)
+    print("toggle is now: " .. tostring(state))
+end)
+
+-- 8. Add a Slider (Ball is prioritized with ZIndex 10)
+MainTab:AddSlider("slidertest", 16, 200, 16, function(value)
+    print(value)
+end)
+
+-- 9. Add a Dropdown (Fixed Syntax)
+MainTab:AddDropdown("dropdowntest", {"dropdowntest1", "dropdowntest2", "dropdowntest3", "dropdowntest4","dropdowntest5", "dropdowntest6", "dropdowntest7", "dropdowntest8", "dropdowntest9", "dropdowntest10"}, function(selected)
+    print("User selected:" .. selected)
+end)
+
+-- 10. Add a Keybind
+MainTab:AddKeybind("keybind test", Enum.KeyCode.RightControl, function()
+    local CurrentState = StarLib:IsVisible()
+    StarLib:SetVisibility(not CurrentState)
+    
+    StarLib:Notify({
+        Title = "UI Toggled",
+        Content = "The menu is now " .. (not CurrentState and "Visible" or "Hidden"),
+        Duration = 2
+    })
+end)
+
+-- 11. Example of UI Control via Button
+SettingsTab:AddButton("Hide UI for 3 Seconds", function()
+    StarLib:SetVisibility(false)
+    task.wait(3)
+    StarLib:SetVisibility(true)
+end)
+
+SettingsTab:AddButton("Self Destruct UI", function()
+    StarLib:Destroy()
+end)
+
+return StarLib
+]]
